@@ -89,7 +89,7 @@ class BlogPostQueries:
 
             if len(post) == 0:
                 message = ResultMessage("", "error", f"No such post is present", 403)
-                print("=============> finished getting post from DB")
+                print("=============> finished getting post by id from DB")
                 return message.get_message()
             else:
                 print(f"post ==========> {post}")
@@ -121,5 +121,27 @@ class BlogPostQueries:
 
         except Exception as e:
             message = ResultMessage("", "error", f"Error updating post: {e}", 500)
+            print(message.message)
+            return message.get_message()
+
+    def delete_post(self, post_id):
+        try:
+            print("=============> deleting post")
+
+            post_to_delete = self.get_post_by_id(post_id)["result"]
+            print(f"post_to_delete======> {post_to_delete}")
+
+            db.session.delete(post_to_delete)
+            db.session.commit()
+
+            print("=============> finished deleting post")
+
+            message = ResultMessage("", "success", f"post '{post_to_delete.title}' successfully deleted", 200)
+            print(f"error =============> {message.message}")
+            return message.get_message()
+
+
+        except Exception as e:
+            message = ResultMessage("", "error", f"Error deleting post: {e}", 500)
             print(message.message)
             return message.get_message()
