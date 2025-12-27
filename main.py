@@ -7,12 +7,13 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL
 from flask_ckeditor import CKEditor, CKEditorField
-from datetime import date
+from datetime import datetime
 
 from data.posts import Post
 from data_queries.blog_post_queries import BlogPostQueries
 from extensions import db
 from models.blog_post import BlogPost
+from post_add_form import AddPostForm
 
 '''
 Make sure the required packages are installed: 
@@ -30,6 +31,7 @@ This will install the packages from the requirements.txt for this project.
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap5(app)
+ckeditor = CKEditor(app)
 
 # CREATE DATABASE
 DB_NAME = "postgres"
@@ -83,6 +85,31 @@ def show_post():
 
 
 # TODO: add_new_post() to create a new blog post
+@app.route("/new-post", methods=["GET", "POST"])
+def new_post():
+    add_post_form = AddPostForm()
+
+    if request.method == "POST":
+        if add_post_form.validate_on_submit():
+            now = datetime.now()
+            date = now.strftime("%B %d, %Y")
+
+            new_post = BlogPost(
+                title=add_post_form.title.data,
+                subtitle=add_post_form.subtitle.data,
+                date=date,
+                body=add_post_form.body.data,
+                author=add_post_form.author.data,
+                img_url=add_post_form.img_url.data,
+            )
+
+            print(f"inside new_post ====> {new_post}")
+
+            blog_post_queries.add_cafe(new_post)
+
+            return redirect(url_for("get_all_posts"))
+
+    return render_template("make-post.html", add_post_form=add_post_form)
 
 # TODO: edit_post() to change an existing blog post
 
