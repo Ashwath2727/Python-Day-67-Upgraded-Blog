@@ -1,13 +1,18 @@
-from flask import Flask, render_template, redirect, url_for
+from urllib.parse import quote
+
+from flask import Flask, render_template, redirect, url_for, request
 from flask_bootstrap import Bootstrap5
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Text
+
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL
 from flask_ckeditor import CKEditor, CKEditorField
 from datetime import date
+
+from data.posts import Post
+from data_queries.blog_post_queries import BlogPostQueries
+from extensions import db
+from models.blog_post import BlogPost
 
 '''
 Make sure the required packages are installed: 
@@ -27,39 +32,53 @@ app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap5(app)
 
 # CREATE DATABASE
-class Base(DeclarativeBase):
-    pass
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
-db = SQLAlchemy(model_class=Base)
+DB_NAME = "postgres"
+DB_USER = "postgres"
+DB_PASSWORD = quote("ashwath@MVN123")
+DB_HOST = "localhost"
+
+SQLALCHEMY_DB_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DB_URI
+app.config["SQLALCHEMY_ECHO"] = True
+
 db.init_app(app)
 
+blog_posts = BlogPost()
+blog_post_queries = BlogPostQueries()
 
-# CONFIGURE TABLE
-class BlogPost(db.Model):
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    title: Mapped[str] = mapped_column(String(250), unique=True, nullable=False)
-    subtitle: Mapped[str] = mapped_column(String(250), nullable=False)
-    date: Mapped[str] = mapped_column(String(250), nullable=False)
-    body: Mapped[str] = mapped_column(Text, nullable=False)
-    author: Mapped[str] = mapped_column(String(250), nullable=False)
-    img_url: Mapped[str] = mapped_column(String(250), nullable=False)
+@app.route("/init")
+def init():
+    post = Post()
+    all_posts = post.get_posts()
 
+    for post in all_posts:
+        blog_post_queries.add_cafe(post)
 
-with app.app_context():
-    db.create_all()
+    return render_template("index.html")
 
 
 @app.route('/')
 def get_all_posts():
     # TODO: Query the database for all the posts. Convert the data to a python list.
-    posts = []
+    res = blog_post_queries.get_all_posts()
+    print(res)
+    posts = res["result"]
+
+    print(f"inside get_all_posts ====> {posts[0]}")
+    print(f"posts length = {len(posts)}")
+    # for post in posts:
+    #     print(post.title)
     return render_template("index.html", all_posts=posts)
 
 # TODO: Add a route so that you can click on individual posts.
-@app.route('/')
-def show_post(post_id):
+@app.route('/show-post')
+def show_post():
     # TODO: Retrieve a BlogPost from the database based on the post_id
-    requested_post = "Grab the post from your database"
+    post_id = request.args.get('post_id')
+    print(f"inside show_post ====> {post_id}")
+
+    result = blog_post_queries.get_post_by_id(post_id)
+    requested_post = result["result"]
     return render_template("post.html", post=requested_post)
 
 
@@ -81,4 +100,8 @@ def contact():
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        print("==================> Creating tables")
+        db.create_all()
+        print("==================> Finished Creating tables")
     app.run(debug=True, port=5003)
