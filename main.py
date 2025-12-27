@@ -88,6 +88,7 @@ def show_post():
 @app.route("/new-post", methods=["GET", "POST"])
 def new_post():
     add_post_form = AddPostForm()
+    print(add_post_form)
 
     if request.method == "POST":
         if add_post_form.validate_on_submit():
@@ -109,9 +110,45 @@ def new_post():
 
             return redirect(url_for("get_all_posts"))
 
-    return render_template("make-post.html", add_post_form=add_post_form)
+    return render_template("make-post.html", add_post_form=add_post_form, post_id=None)
 
 # TODO: edit_post() to change an existing blog post
+@app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
+def edit_post(post_id):
+    print(f"inside edit_post post_id ====> {post_id}")
+    res = blog_post_queries.get_post_by_id(post_id)
+    requested_post = res["result"]
+
+    edit_form = AddPostForm(
+        title=requested_post.title,
+        subtitle=requested_post.subtitle,
+        author=requested_post.author,
+        img_url=requested_post.img_url,
+        body=requested_post.body,
+    )
+
+    if request.method == "POST":
+        requested_post_id = requested_post.id
+        print(f"inside edit_post requested_post id ====> {id}")
+        if edit_form.validate_on_submit():
+            edited_post = BlogPost(
+                title=edit_form.title.data,
+                subtitle=edit_form.subtitle.data,
+                author=edit_form.author.data,
+                img_url=edit_form.img_url.data,
+                body=edit_form.body.data,
+                date=requested_post.date,
+            )
+
+
+            print(f"edited_post ====> {edited_post}")
+
+            blog_post_queries.update_post(edited_post, requested_post)
+
+            return redirect(url_for("show_post", post_id=requested_post_id))
+
+
+    return render_template("make-post.html", add_post_form=edit_form, post_id=post_id)
 
 # TODO: delete_post() to remove a blog post from the database
 

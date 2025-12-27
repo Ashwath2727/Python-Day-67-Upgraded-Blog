@@ -101,3 +101,25 @@ class BlogPostQueries:
             message = ResultMessage("", "error", f"Error getting post by id from DB: {e}", 500)
             print(message.message)
             return message.get_message()
+
+
+    def update_post(self, edited_post, requested_post):
+        try:
+            print("=============> updating post")
+
+            requested_post.title = edited_post.title
+            requested_post.subtitle = edited_post.subtitle
+            requested_post.author = edited_post.author
+            requested_post.body = edited_post.body
+            requested_post.img_url = edited_post.img_url
+
+            db.session.add(requested_post)
+            db.session.commit()
+
+
+            print("=============> finished updating post")
+
+        except Exception as e:
+            message = ResultMessage("", "error", f"Error updating post: {e}", 500)
+            print(message.message)
+            return message.get_message()
